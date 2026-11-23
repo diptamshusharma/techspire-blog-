@@ -1,0 +1,717 @@
+==============================================================================
+ TECHSPHERE - STUDY NOTES
+ Technology Blog Platform (React + Express + MongoDB)
+==============================================================================
+
+How to use these notes
+- Chapter numbers (for example "Chapter 16") refer to your React_Study_Guide.pdf
+  ("React - From Zero to Understanding"). I only use a chapter number when that
+  topic really has that chapter in the guide's table of contents.
+- The guide marks Chapters 35-40 (useEffect, fetch/Axios, CRUD, Backend
+  Integration, Authentication, Context API) as "NOT YET COVERED". TechSphere
+  needs useEffect and fetch, so those parts are commented in the code and are
+  marked "(not yet covered)" below. Be ready to say this honestly in your viva.
+- Some small things in the project are NOT taught in the guide (for example
+  async/await, window.confirm, <select> and <textarea>). They are listed in
+  Section C at the end under "Things used that the guide does not teach".
+
+
+==============================================================================
+ A. PROJECT INTRODUCTION
+==============================================================================
+
+A1. What is TechSphere?
+TechSphere is a small website where people can read and write blog posts about
+technology. The posts are stored in a real database (MongoDB), so they are still
+there after you refresh the page or restart your computer.
+
+A2. What problem does it solve?
+It is a learning project. It shows the whole path of a real web application:
+   Browser (React)  <-->  Server (Express)  <-->  Database (MongoDB)
+Before this, your class examples only used hard-coded arrays and console.log
+(Chapter 20, Chapter 36). TechSphere replaces the fake data with real data.
+
+A3. Main features (CRUD only)
+- Create a blog post (title, author, category, short description, full content)
+- Read all posts on the home page as cards
+- Read one post on its own detail page
+- Update (edit) a post
+- Delete a post, with a confirmation box
+There is no login, no comments, no likes. That is on purpose.
+
+A4. Technologies used
+- React (with Vite)      : builds the user interface from components
+- React Router           : gives the single-page app different "pages"
+- Node.js                : runs JavaScript on the server
+- Express                : creates the web server and API routes
+- MongoDB                : the database
+- Mongoose               : lets Node.js talk to MongoDB with a schema/model
+- CORS                   : lets the React app call the Express server
+- dotenv (.env file)     : keeps the database connection string secret
+
+
+==============================================================================
+ B. FILE-BY-FILE EXPLANATION
+==============================================================================
+
+TechSphere/
+ |-- frontend/
+ |    |-- index.html            The one and only HTML page. It has <div id="root">
+ |    |                         and loads src/main.jsx. (Chapter 2 and Chapter 3)
+ |    |-- vite.config.js        Tells Vite to use the React plugin.
+ |    |-- package.json          Lists frontend libraries (react, react-router-dom,
+ |    |                         vite) and the scripts "npm run dev" / "build".
+ |    |-- public/               Folder for static files (empty here).
+ |    |-- src/
+ |         |-- main.jsx         Entry point. Puts <App /> inside the root div and
+ |         |                    wraps it in <BrowserRouter>. Imports style.css.
+ |         |-- App.jsx          Shows Navbar, the <Routes>, and Footer. This is
+ |         |                    the "map" of all pages.
+ |         |-- style.css        The single stylesheet (navy, white, blue accent,
+ |         |                    Flexbox, Grid, media queries for mobile).
+ |         |-- components/
+ |         |    |-- Navbar.jsx    Top bar with the site name and NavLinks.
+ |         |    |-- BlogCard.jsx  One blog preview card. Receives data as props.
+ |         |    |-- Footer.jsx    Simple footer text.
+ |         |-- pages/
+ |              |-- Home.jsx       Welcome section + loads and shows all posts.
+ |              |-- BlogDetail.jsx Shows one post. Has Edit and Delete buttons.
+ |              |-- CreateBlog.jsx Form that sends a new post to the backend.
+ |              |-- EditBlog.jsx   Same form, but pre-filled; sends an update.
+ |
+ |-- backend/
+ |    |-- server.js              Starts Express, adds cors() and express.json(),
+ |    |                          connects the database, mounts the blog routes.
+ |    |-- config/db.js           Connects to MongoDB using the URL in .env.
+ |    |-- models/Blog.js         The Mongoose schema + model (what a post is).
+ |    |-- routes/blogRoutes.js   The 5 CRUD routes.
+ |    |-- .env.example           Template for the secret settings. You copy it to
+ |    |                          ".env" and put your own MONGO_URI inside.
+ |    |-- .gitignore             Stops .env and node_modules going to GitHub.
+ |    |-- package.json           Lists backend libraries (express, mongoose, cors,
+ |                               dotenv, nodemon) and scripts.
+ |
+ |-- README.md                   Short run instructions.
+
+Why are there "pages" and "components" folders?
+- A page is a whole screen that has its own route (Home, BlogDetail, ...).
+- A component is a small reusable piece (Navbar, BlogCard, Footer).
+- Chapter 10 (Component Composition) explains how small components are placed
+  inside bigger ones, forming a component tree: App -> Navbar / Home / Footer,
+  and Home -> BlogCard.
+
+Why do we have a frontend and a backend folder?
+The browser can never talk directly to MongoDB safely, because the database
+password would be visible to everyone. The React app asks the Express server,
+and only the server knows the password (Chapter 38 introduces the idea of a backend that stores data permanently).
+
+
+==============================================================================
+ C. REACT CONCEPTS USED
+==============================================================================
+
+---------- C1. JSX  (Chapter 4, Chapter 5) ----------
+Simple words: JSX looks like HTML but it is written inside JavaScript. Inside
+{ } you can put any JavaScript EXPRESSION. A component must return ONE root
+element. In JSX we write className, not class.
+Where used: every component. Example from BlogCard.jsx:
+
+   <div className="blog-card">
+     <span className="category-label">{category}</span>
+     <h3>{title}</h3>
+   </div>
+
+What it does: one root <div>; className sets the CSS class; {category} and
+{title} are replaced by the values at that moment.
+Remember (Chapter 5): { } only accepts expressions, so we cannot put a for loop
+or if/else inside; that is why we use .map() and ternaries.
+
+---------- C2. Functional components  (Chapters 6, 7) ----------
+Simple words: a component is a JavaScript function that returns JSX. Its name
+must start with a capital letter. We keep one component per file.
+The guide writes components as arrow functions, so the project does too.
+Example (Footer.jsx):
+
+   const Footer = () => {
+     return (
+       <footer className="footer">
+         <p>TechSphere - a university project ...</p>
+       </footer>
+     );
+   };
+
+What it does: when you write <Footer></Footer> in App.jsx, React calls this
+function and shows the JSX it returns.
+
+---------- C3. Import and export  (Chapter 8) ----------
+Simple words: export default shares a component from its file; import brings
+it into another file.
+Where used: bottom of every component file, top of App.jsx. Example:
+
+   // Footer.jsx
+   export default Footer;
+   // App.jsx
+   import Footer from "./components/Footer";
+
+What it does: lets App.jsx use Footer. Named imports in curly braces are used
+for library tools, e.g. import { NavLink, useNavigate } from "react-router-dom".
+
+---------- C4. Props and parent -> child data flow  (Chapters 13, 14) ----------
+Simple words: props are the inputs of a component. The parent sends them as
+attributes, the child receives them in its parameter list. Props go DOWN only
+(parent to child) and the child must not change them.
+Where used: Home.jsx sends data, BlogCard.jsx receives it.
+
+   // Home.jsx (parent)
+   <BlogCard key={blog._id} id={blog._id} title={blog.title}
+             author={blog.author} ... ></BlogCard>
+
+   // BlogCard.jsx (child) - destructuring
+   const BlogCard = ({ id, title, author, category, description, createdAt }) => {
+
+What it does: BlogCard has no data of its own; it only displays what it gets.
+Curly braces: title={blog.title} uses { } because it is a JavaScript value, not
+a fixed string (Chapter 33 says non-string props need { }).
+
+---------- C5. useState  (Chapters 16, 17, 18) ----------
+Simple words: state is data a component remembers. When you change it with its
+setter function, React re-renders (draws the component again).
+Where used: Home.jsx (blogs, loading, error), every form (one state per field).
+The guide writes it as let [x, setX] = useState(...), so the project does too.
+
+   let [blogs, setBlogs] = useState([]);
+   let [loading, setLoading] = useState(true);
+
+What it does: blogs starts as an empty array. After fetch finishes we call
+setBlogs(data), React re-renders, and the cards appear.
+Rule (Chapter 17): never change state directly (blogs = ...). Always use the
+setter (setBlogs(...)).
+
+---------- C6. Arrays of objects and .map()  (Chapters 11, 12) ----------
+Simple words: .map() runs once per array item and returns a new array of JSX.
+Each element needs a unique key; the guide says to prefer key={item._id}.
+Where used: Home.jsx, and the category dropdown in the forms.
+
+   {blogs.map((blog) => (
+     <BlogCard key={blog._id} ... ></BlogCard>
+   ))}
+
+What it does: if blogs has 3 objects, 3 BlogCards appear. MongoDB gives every
+post a unique _id, so it is a perfect key.
+(For the category dropdown the items are plain strings, so the string itself is
+used as the key: <option key={item} ...>.)
+
+---------- C7. Events: onClick, onChange, onSubmit  (Chapters 15, 22, 23) ----------
+Simple words: events are things the user does. We give React a function to run.
+Rule from Chapter 33: onClick={fn} or onClick={() => fn()}, never onClick={fn()}.
+Where used: BlogDetail.jsx and Home.jsx.
+
+   <button className="btn btn-danger" onClick={handleDelete}>Delete</button>
+   <button onClick={() => navigate("/create")}>Add New Blog</button>
+
+What it does: handleDelete runs only when the button is clicked. The second
+example uses an arrow function because we need to pass "/create" to navigate.
+
+---------- C8. Controlled forms and preventDefault  (Chapters 20-24) ----------
+Simple words: a controlled input shows what is in state (value={...}) and
+updates the state on every key press (onChange). The guide points out that its
+own Form1/Form2 lacked value={...}; Chapter 21 says value={...} is what makes
+an input truly controlled, and lets you reset the form with setName("").
+Where used: CreateBlog.jsx and EditBlog.jsx.
+
+   let [title, setTitle] = useState("");
+   <input type="text" value={title}
+          onChange={(e) => setTitle(e.target.value)} />
+
+   const handleSubmit = async (e) => {
+     e.preventDefault();      // Chapter 24
+     ...
+   <form onSubmit={handleSubmit}>   // Chapter 23: onSubmit goes on the form
+
+What it does: e.target.value (Chapter 22) is the text currently typed. Without
+e.preventDefault() the browser reloads the page and all state is lost.
+After a successful save we call setTitle(""), setAuthor("") ... to reset the
+fields (the Create page then navigates away anyway).
+
+---------- C9. React Router  (Chapters 25-30) ----------
+Simple words: React Router makes one HTML page behave like many pages by
+looking at the URL.
+Where used and examples:
+
+ (a) BrowserRouter in main.jsx (Chapter 25) - wraps the whole app once.
+        <BrowserRouter><App></App></BrowserRouter>
+
+ (b) Routes and Route in App.jsx (Chapter 26)
+        <Route path="/blog/:id" element={<BlogDetail></BlogDetail>}></Route>
+
+ (c) NavLink in Navbar.jsx (Chapter 27) - a link that does not reload the page
+        <NavLink to="/create">Add New Blog</NavLink>
+     NavLink automatically gets the CSS class "active" on the current page; our
+     CSS uses that to highlight the current link.
+
+ (d) useNavigate (Chapter 28) - go to another page from code, e.g. after saving
+        let navigate = useNavigate();
+        navigate("/");           // back to the blog list
+     NavLink = user clicks a link. useNavigate = our code decides, such as
+     after a form submits or after a delete (the guide says the same).
+
+ (e) Dynamic route /blog/:id (Chapter 29) - one Route matches /blog/1, /blog/2...
+
+ (f) useParams (Chapter 30) - reads the :id from the URL
+        let params = useParams();
+        fetch(API_URL + "/" + params.id)
+     params.id is always a string. In our case that is fine because MongoDB ids
+     are strings too.
+
+---------- C10. Conditional rendering  (Chapter 19) ----------
+Simple words: show different JSX depending on a condition, using the ternary
+operator: condition ? showThis : showThat.
+Where used: Home.jsx shows one of four things:
+
+   {loading ? ( <p>Loading...</p> )
+    : error ? ( <p className="message error">{error}</p> )
+    : blogs.length === 0 ? ( <p>No blog posts yet...</p> )
+    : ( <div className="blog-grid"> ...cards... </div> )}
+
+What it does: while loading we show "Loading..."; if the fetch failed we show
+the error; if the list is empty we show a friendly message; otherwise cards.
+BlogDetail.jsx also uses error ? <p>...</p> : null so nothing is shown when
+there is no error.
+
+---------- C11. useEffect  (Chapter 35 - NOT YET COVERED in the guide) ----------
+Simple words: useEffect runs code at a certain moment. With an empty array [] it
+runs ONCE, when the component first appears. This is exactly how the guide's
+preview shows it: useEffect(() => { getData(); }, []).
+Where used: Home.jsx (load all posts), BlogDetail.jsx and EditBlog.jsx (load
+one post).
+
+   useEffect(() => {
+     const getBlogs = async () => { ... };
+     getBlogs();
+   }, []);
+
+What it does: when Home appears, it calls getBlogs() once to fetch the posts.
+In BlogDetail and EditBlog the array is [params.id], which means "run again if
+the id in the URL changes". The guide does not teach this dependency idea yet,
+so just say: "[] = once, [params.id] = once for each id".
+Why not put fetch directly in the component body? It would run on every
+re-render and cause an endless loop (fetch -> setState -> re-render -> fetch).
+
+---------- C12. fetch()  (Chapter 36 - NOT YET COVERED in the guide) ----------
+Simple words: fetch is the browser's built-in way to send an HTTP request to a
+server. (The guide previews Axios; the assignment asks for fetch. Both do the
+same job.)
+Where used: every page.
+
+   const response = await fetch(API_URL);       // GET (default)
+   const data = await response.json();          // read the JSON answer
+
+   await fetch(API_URL, {
+     method: "POST",
+     headers: { "Content-Type": "application/json" },
+     body: JSON.stringify(newBlog),
+   });
+
+What it does: the first sends a GET and reads the list. The second sends a POST
+with the new blog as JSON text. "Content-Type" tells Express the body is JSON so
+express.json() can read it.
+Note: fetch does NOT throw an error for 404/500 answers, so the code checks
+if (!response.ok) { throw new Error(data.message); } and shows that message.
+async/await just means "wait here for the answer before continuing".
+
+---------- Things used that the guide does NOT teach ----------
+(Be honest about these in a viva; they are small and easy to explain.)
+- async / await and try / catch (for fetch)
+- window.confirm("...") - the browser's OK/Cancel box used before deleting
+- <select> and <textarea> as controlled inputs (same value/onChange pattern)
+- the required attribute on inputs
+- the "end" prop on <NavLink to="/" end> so Home is not "active" on every page
+- if (loading) { return ... } - an early return inside a component
+- [params.id] in the useEffect dependency array
+- fetch(), JSON.stringify and the HTTP methods (Chapters 36-38 only preview them)
+
+
+==============================================================================
+ D. BACKEND CONCEPTS
+==============================================================================
+
+Node.js
+  A program that lets you run JavaScript outside the browser, for example on a
+  server. Our backend runs on Node.js. "npm" is its package manager.
+
+Express.js
+  A small library for Node.js that makes it easy to build a web server. You say
+  "when a GET request comes to /api/blogs, run this function".
+  In server.js: const app = express(); app.listen(5000, ...).
+
+MongoDB
+  A NoSQL database. It stores data as documents that look like JavaScript
+  objects (JSON). Documents are grouped in collections. A blog post is one
+  document in the "blogs" collection. MongoDB adds a unique _id to each one.
+
+Mongoose
+  A library that connects Node.js to MongoDB and gives us a schema (the shape
+  of a document) and a model (the tool to save, find, update, delete).
+  Example: Blog.find(), Blog.create(req.body), Blog.findById(id).
+
+API
+  Application Programming Interface: a way for two programs to talk. Here the
+  React app (client) asks the Express server and gets an answer. The answers
+  are JSON data, not web pages.
+
+REST API
+  A common style of API where the URL names the thing (/api/blogs) and the HTTP
+  method says the action: GET = read, POST = create, PUT = update,
+  DELETE = delete. Same URL, different method, different action.
+
+CRUD
+  Create, Read, Update, Delete - the four basic things you do with data.
+  (Chapter 37 names these four words as a preview.)
+
+CORS
+  Cross-Origin Resource Sharing. React runs on http://localhost:5173 and Express
+  on http://localhost:5000. Browsers block requests between different origins
+  unless the server allows it. app.use(cors()) tells the browser "this is
+  allowed". If you forget it, the browser console shows a CORS error.
+
+.env
+  A text file for secret or changeable settings, such as MONGO_URI (the database
+  address, which may contain a password) and PORT. dotenv loads it into
+  process.env. It is listed in .gitignore so it is never uploaded. We upload
+  .env.example instead, which has no real password.
+
+express.json()
+  Middleware that reads the JSON sent in a request body and puts it in req.body.
+  Without it req.body would be undefined.
+
+
+==============================================================================
+ E. COMPLETE DATA FLOW (Create Blog example)
+==============================================================================
+
+ React Form -> fetch -> Express Route -> Mongoose Model -> MongoDB
+                                                              |
+ React UI  <-  Express Response  <-----------------------------
+
+Step by step:
+
+1. The user types into the form on /create. Each key press runs
+   onChange={(e) => setTitle(e.target.value)}, so state always matches the
+   inputs (CreateBlog.jsx).
+
+2. The user clicks Submit. The form's onSubmit runs handleSubmit(e).
+   e.preventDefault() stops the page reloading.
+
+3. handleSubmit builds one object from the state variables:
+   const newBlog = { title, author, category, description, content };
+
+4. fetch sends it:
+   fetch("http://localhost:5000/api/blogs", { method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(newBlog) })
+
+5. The request reaches Express (server.js). cors() allows it and
+   express.json() turns the body into req.body.
+
+6. server.js sent every /api/blogs URL to blogRoutes.js. The route
+   router.post("/", ...) matches POST /api/blogs.
+
+7. The route calls Blog.create(req.body). This is the Mongoose model
+   (models/Blog.js). Mongoose checks the schema: all five fields are required.
+   If something is missing it throws an error, and the route answers with
+   status 400 and a message.
+
+8. Mongoose sends the document to MongoDB, which saves it in the "blogs"
+   collection and adds _id and createdAt (default Date.now).
+
+9. MongoDB returns the saved document to Mongoose, and the route answers:
+   res.status(201).json(newBlog)   (201 = "created").
+
+10. Back in React, fetch gives us the response. If response.ok is true we reset
+    the form with the setters and call navigate("/").
+
+11. Home mounts, its useEffect fetches GET /api/blogs, setBlogs(data) runs,
+    React re-renders, and the new post appears as a card.
+    This is the chain from Chapter 31: event -> state -> re-render -> UI.
+
+
+==============================================================================
+ F. CRUD REQUEST AND RESPONSE CYCLE
+==============================================================================
+
+---------- CREATE : POST /api/blogs ----------
+Frontend (CreateBlog.jsx): handleSubmit sends fetch with method "POST" and the
+  blog as JSON in the body. On success it resets the fields and navigates to "/".
+Backend (blogRoutes.js): Blog.create(req.body) -> 201 + saved post.
+  Invalid data -> 400 + message, which React shows in a red box.
+
+---------- READ ALL : GET /api/blogs ----------
+Frontend (Home.jsx): useEffect runs fetch(API_URL) once. Result goes to
+  setBlogs. Loading and error states are shown with ternaries. .map() makes
+  the cards.
+Backend: Blog.find().sort({ createdAt: -1 }) -> array of posts, newest first.
+  Database error -> 500 + message.
+
+---------- READ ONE : GET /api/blogs/:id ----------
+Frontend (BlogDetail.jsx): "Read More" is a NavLink to /blog/<id>. The route
+  /blog/:id shows BlogDetail. useParams() gives params.id, and useEffect fetches
+  API_URL + "/" + params.id.
+Backend: Blog.findById(req.params.id). Not found -> 404
+  "Blog post not found". Found -> the post as JSON.
+
+---------- UPDATE : PUT /api/blogs/:id ----------
+Frontend (EditBlog.jsx): the Edit button does navigate("/edit/" + blog._id).
+  EditBlog first fetches the post (GET one) and fills the form with
+  setTitle(data.title) etc. On submit it sends fetch with method "PUT" and the
+  changed values, then navigates to "/".
+Backend: Blog.findByIdAndUpdate(id, req.body, { new: true, runValidators: true })
+  - new: true   returns the updated post instead of the old one
+  - runValidators: true   keeps the "required" rules on updates
+  Not found -> 404. Invalid data -> 400.
+
+---------- DELETE : DELETE /api/blogs/:id ----------
+Frontend (BlogDetail.jsx): handleDelete shows window.confirm. If the user
+  cancels, we return. If OK, fetch with method "DELETE" is sent, then
+  navigate("/") so the list is loaded again without the deleted post.
+Backend: Blog.findByIdAndDelete(id). Not found -> 404, otherwise
+  { message: "Blog post deleted" }.
+
+
+==============================================================================
+ G. COMMON MISTAKES TO AVOID
+==============================================================================
+
+The first group comes from the guide's Chapter 33 (Common Mistakes) table.
+
+ 1. Forgetting to import a component: you get "X is not defined". Every
+    non-global name must be imported (Chapter 33).
+ 2. Forgetting export default: the import is undefined and React says it got an
+    invalid element type (Chapter 8 and 33).
+ 3. Lowercase component names: <blogCard /> is treated as an HTML tag. Components
+    start with a capital letter (Chapter 33).
+ 4. class instead of className in JSX (Chapter 33).
+ 5. Forgetting key in .map(): console warning. Use key={item._id} (Chapter 12 and 33).
+ 6. Changing state directly (count = count + 1) instead of using the setter
+    (Chapter 17 and 33).
+ 7. Forgetting e.preventDefault(): the page reloads on submit and state is lost
+    (Chapter 24 and 33).
+ 8. Inputs without value={...}: not truly controlled; the form cannot be reset or
+    pre-filled (Chapter 21 and 33). EditBlog depends on value={...} to show the
+    loaded post.
+ 9. onClick={handleDelete()} instead of onClick={handleDelete}: it runs
+    immediately while rendering (Chapter 33).
+10. Non-string props without { }: for example price="100" is a string
+    (Chapter 33).
+11. Typos in field names (the guide's item.quanity example): item.descripton
+    gives undefined and no error. Check names against the schema.
+12. Incorrect route paths: a link to /blogs/5 will not match <Route path="/blog/:id">.
+    Every to="..." needs a matching path="..." (Chapter 26 and 33).
+13. Forgetting useParams() for dynamic routes: you cannot know which post to load
+    (Chapter 30).
+
+These are project-specific (not from the guide):
+14. Wrong API URL, for example http://localhost:5000/api/blog (missing "s").
+    The frontend URL must exactly match the backend route.
+15. Forgetting to start the backend: the home page says "Could not load blog
+    posts. Is the backend running?".
+16. Forgetting app.use(express.json()): req.body is undefined, so create fails.
+17. Forgetting app.use(cors()): the browser console shows a CORS error.
+18. Wrong MongoDB connection string, or no .env file: the backend prints
+    "MongoDB connection failed". For Atlas, check the username, password
+    (special characters must be URL-encoded) and that your IP address is allowed
+    in Atlas "Network Access".
+19. Putting the .env file in the wrong folder: it must be inside backend/.
+20. Forgetting npm install in either folder.
+21. Forgetting to restart the backend after editing .env (use npm run dev with
+    nodemon, and restart it after .env changes).
+
+
+==============================================================================
+ H. HOW TO RUN THE PROJECT
+==============================================================================
+
+H1. Install Node.js
+  - Go to https://nodejs.org and download the LTS version.
+  - Install it with the default options.
+  - Open a terminal (Command Prompt / PowerShell / Terminal) and check:
+        node -v
+        npm -v
+    Both should print a version number.
+
+H2. Get MongoDB (choose ONE)
+  Option 1 - Local: install MongoDB Community Server from mongodb.com and
+     make sure it is running. Your connection string is:
+        mongodb://127.0.0.1:27017/techsphere
+  Option 2 - Cloud (Atlas): create a free account and cluster on mongodb.com/atlas,
+     create a database user, allow your IP address under Network Access, click
+     "Connect" -> "Drivers" and copy the connection string. Put your username and
+     password in it and add /techsphere before the "?".
+
+H3. Backend
+        cd TechSphere/backend
+        npm install
+  Create a file called .env in the backend folder (copy .env.example):
+        MONGO_URI=mongodb://127.0.0.1:27017/techsphere
+        PORT=5000
+  Start it:
+        npm run dev
+  You should see:   Server running on http://localhost:5000
+                    MongoDB connected
+  Quick check: open http://localhost:5000/api/blogs in the browser. You should
+  see [] (an empty list) before you add posts.
+
+H4. Frontend (open a SECOND terminal; leave the backend running)
+        cd TechSphere/frontend
+        npm install
+        npm run dev
+  Vite prints a local address, normally http://localhost:5173
+
+H5. URLs to open
+  - Website:  http://localhost:5173
+  - API test: http://localhost:5000/api/blogs
+
+H6. How to test each CRUD operation
+  Create : click "Add New Blog", fill all fields, press Submit. You are sent to
+           the home page and the new card is there.
+  Read all: the home page shows all cards. Refresh the page - they stay, which
+           proves they are in MongoDB.
+  Read one: click "Read More" on a card. The URL becomes /blog/<id> and you see
+           the full post.
+  Update : on the detail page click Edit, change the title, press Save Changes.
+           The home page shows the new title.
+  Delete : on the detail page click Delete, press OK in the confirmation box.
+           You return to the home page and the card is gone.
+  Extra  : leave a field empty (you can remove "required" in your browser tools,
+           or test the API with a tool like Postman) to see the 400 error.
+  Extra  : type /blog/123 in the address bar to see the error message.
+  Optional: check the data inside MongoDB with MongoDB Compass (database
+           "techsphere", collection "blogs").
+
+
+==============================================================================
+ I. VIVA PREPARATION (20 questions)
+==============================================================================
+
+Q1. What is React and why did you use it?
+A1. React is a JavaScript library for building user interfaces from small
+    reusable components. When state changes, React updates only the parts of the
+    screen that need to change, so we do not update the page by hand (Chapter 1).
+
+Q2. What is a component? How do you write one?
+A2. A component is a function that returns JSX. Its name starts with a capital
+    letter, and it lives in its own file with export default (Chapters 6-8).
+
+Q3. What is JSX?
+A3. A syntax that looks like HTML but is written inside JavaScript. We use
+    className instead of class, one root element, and { } for JavaScript
+    expressions (Chapters 4-5).
+
+Q4. What are props? Which way do they flow?
+A4. Props are inputs passed from a parent to a child. They flow one way,
+    parent to child, and the child must not change them. Example: Home sends
+    title and author to BlogCard (Chapters 13-14).
+
+Q5. What is state and why do we need useState?
+A5. State is data a component remembers. When we call the setter, React
+    re-renders. Normal variables would not update the screen. Example:
+    setBlogs(data) shows the cards after loading (Chapters 16-18).
+
+Q6. Why do we use key in .map()? Why key={blog._id}?
+A6. React uses the key to track each item in a list. _id is unique and stable
+    (the array index is worse if the list changes) (Chapter 12).
+
+Q7. What is a controlled input?
+A7. An input whose value comes from state (value={title}) and that updates
+    state through onChange. State is the single source of truth, so we can
+    pre-fill the Edit form and reset forms (Chapter 21).
+
+Q8. Why do we call e.preventDefault() in handleSubmit?
+A8. Without it the browser reloads the page when a form is submitted, and all
+    state is lost (Chapter 24).
+
+Q9. How does routing work in your project?
+A9. BrowserRouter wraps the app in main.jsx. App.jsx has Routes with a Route for
+    each path ("/", "/blog/:id", "/create", "/edit/:id"). NavLink changes the URL
+    without reloading, and useNavigate changes it from code (Chapters 25-28).
+
+Q10. What is a dynamic route and how do you read the id?
+A10. A route with a placeholder, like /blog/:id. useParams() returns an object,
+     so params.id is the id from the URL (Chapters 29-30).
+
+Q11. When do you use NavLink and when useNavigate?
+A11. NavLink when the user clicks a link (the navbar, Read More). useNavigate
+     when our code decides to move, for example after saving or deleting
+     (Chapter 28).
+
+Q12. What does useEffect do in your project?
+A12. It runs the fetch once when a page appears, so data is loaded from the
+     backend. [] means run once. (The guide says useEffect is not yet covered,
+     so I learned just this one use of it.)
+
+Q13. What is the difference between Node.js and Express?
+A13. Node.js runs JavaScript on the server. Express is a library on top of Node
+     that makes it easy to create routes and handle requests and responses.
+
+Q14. What is a REST API? List your routes.
+A14. An API that uses URLs for things and HTTP methods for actions:
+     GET /api/blogs, GET /api/blogs/:id, POST /api/blogs,
+     PUT /api/blogs/:id, DELETE /api/blogs/:id.
+
+Q15. What is MongoDB and how is it different from MySQL?
+A15. MongoDB is a NoSQL database that stores flexible JSON-like documents in
+     collections. MySQL stores rows in tables with a fixed structure.
+
+Q16. What does Mongoose do?
+A16. It connects Node to MongoDB and gives us a schema (rules for the data, for
+     example required fields) and a model with methods like find, create,
+     findByIdAndUpdate and findByIdAndDelete.
+
+Q17. What is CORS and why did you need it?
+A17. A browser rule that blocks requests between different origins. The React app
+     (port 5173) calls Express (port 5000), so Express uses cors() to allow it.
+
+Q18. Why do you use a .env file?
+A18. To keep secrets, like the MongoDB connection string with its password, out
+     of the code and out of GitHub. The real .env is ignored by git, and
+     .env.example shows what values are needed.
+
+Q19. Explain what happens when the user clicks Delete.
+A19. handleDelete asks window.confirm. If OK, fetch sends DELETE /api/blogs/:id.
+     Express calls Blog.findByIdAndDelete, MongoDB removes the document, the
+     server answers with a message, and React calls navigate("/") so the list is
+     loaded again without that post.
+
+Q20. How do you handle errors and loading?
+A20. Each page has loading and error state. try/catch around fetch catches
+     network problems, and we check response.ok to catch 400/404/500 answers.
+     The backend returns a message, and React shows it with a ternary.
+
+
+==============================================================================
+ J. TRY IT YOURSELF (5 exercises)
+==============================================================================
+
+1. Add a "Back to Home" button on the Create page using useNavigate and
+   type="button", so it does not submit the form (Chapters 23 and 28).
+
+2. Show how many blog posts there are on the home page, for example
+   "Total posts: 4", using {blogs.length} (Chapter 5).
+
+3. Add a "Clear Form" button on the Create page that calls all five setters with
+   empty strings and see the inputs empty out (Chapter 21 practice).
+
+4. Add a new category, "Cybersecurity", to the categories array in both forms
+   and create a post with it. Why did the card show it without any other
+   change? (Hint: the backend stores category as a plain String.)
+
+5. In the backend, add one more field called "readTime" (Number) to the
+   schema and to the forms, and show it on BlogDetail. Which files must you
+   change? (Hint: Blog.js, CreateBlog.jsx, EditBlog.jsx, BlogDetail.jsx.)
+
+Bonus (harder): add a simple search box on the home page that filters the
+blogs array by title using state and .filter() before .map().
+
+
+==============================================================================
+ END OF NOTES - Good luck with your viva!
+==============================================================================
