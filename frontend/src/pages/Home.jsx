@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import BlogCard from "../components/BlogCard";
 
-const API_URL = "http://localhost:5000/api/blogs";
+const API_URL = "/api/blogs";
 
 const Home = () => {
   let [blogs, setBlogs] = useState([]); // the list of blog posts

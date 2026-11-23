@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, NavLink } from "react-router-dom";
 
-const API_URL = "http://localhost:5000/api/blogs";
+const API_URL = "/api/blogs";
 
 const BlogDetail = () => {
   let params = useParams(); // params.id comes from the route path /blog/:id (Chapter 30)

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 
-const API_URL = "http://localhost:5000/api/blogs";
+const API_URL = "/api/blogs";
 
 const categories = [
   "Artificial Intelligence",
